@@ -1,0 +1,80 @@
+---
+- name: Setup IIS with Healthcheck and SSL
+  hosts: windows
+  gather_facts: yes
+  vars:
+    site_name: "Default Web Site"
+    web_root: "C:\\inetpub\\wwwroot"
+    healthcheck_file: "healthcheck.html"
+    index_file: "Default.htm"
+    ssl_cert_path: ""           # Set full path to PFX if using SSL
+    ssl_cert_password: ""       # Set PFX password
+    hostname: ""                # Set hostname for SSL binding
+
+  tasks:
+
+    - name: Install IIS and required features
+      win_feature:
+        name:
+          - Web-Server
+          - Web-Common-Http
+          - Web-Default-Doc
+          - Web-Static-Content
+          - Web-Http-Errors
+          - Web-Http-Redirect
+          - Web-Health
+          - Web-Http-Logging
+          - Web-Stat-Compression
+          - Web-Mgmt-Tools
+        state: present
+        include_management_tools: yes
+
+    - name: Ensure web root directory exists
+      win_file:
+        path: "{{ web_root }}"
+        state: directory
+
+    - name: Create healthcheck endpoint
+      win_copy:
+        content: "OK"
+        dest: "{{ web_root }}\\{{ healthcheck_file }}"
+
+    - name: Deploy default index page
+      win_copy:
+        content: "<!doctype html><html><body><h1>IIS is up</h1></body></html>"
+        dest: "{{ web_root }}\\{{ index_file }}"
+
+    - name: Ensure HTTP firewall rule
+      win_firewall_rule:
+        name: "Allow HTTP 80"
+        enable: yes
+        direction: in
+        protocol: TCP
+        localport: 80
+      ignore_errors: yes
+
+    - name: Ensure HTTPS firewall rule
+      win_firewall_rule:
+        name: "Allow HTTPS 443"
+        enable: yes
+        direction: in
+        protocol: TCP
+        localport: 443
+      ignore_errors: yes
+
+    - name: Import SSL certificate (if path provided)
+      win_certificate_store:
+        path: "{{ ssl_cert_path }}"
+        password: "{{ ssl_cert_password }}"
+        state: present
+        store_name: MY
+      when: ssl_cert_path != ""
+
+    - name: Create HTTPS binding (if hostname provided)
+      win_iis_webbinding:
+        name: "{{ site_name }}"
+        protocol: https
+        port: 443
+        host: "{{ hostname }}"
+        certificate_hash: "{{ lookup('win_certificate', ssl_cert_path).Thumbprint }}"
+      when: ssl_cert_path != "" and hostname != ""
