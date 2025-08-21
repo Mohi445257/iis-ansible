@@ -2,10 +2,7 @@
 
 This repository demonstrates **Windows automation and DevOps skills** by automating IIS installation, default site setup, health-check endpoint, firewall rules, and optional SSL binding using Ansible.
 
-It’s **idempotent**, safe to run multiple times, and ready for deploying static or packaged applications. Perfect for showcasing **Windows infrastructure management and Ansible proficiency** to recruiters.
-
----
-
+It’s **idempotent**, safe to run multiple times, and ready for deploying static or packaged applications. 
 ## Features
 
 - Installs IIS with required features:
@@ -39,4 +36,5 @@ is-ansible/
 └─ files/
 ├─ placeholder.pfx # Example placeholder for SSL cert
 └─ sample-index.html # Optional: sample site file
+
 
